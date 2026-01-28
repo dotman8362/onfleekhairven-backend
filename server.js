@@ -21,7 +21,7 @@ const app = express();
    MIDDLEWARE
 ====================== */
 app.use(cors({
-  origin: "*", // temporary (we'll lock it later)
+  origin: "https://onfleekhairven.co.uk", // temporary (we'll lock it later)
 }));
 app.use(express.json());
 
