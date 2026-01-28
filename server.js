@@ -12,9 +12,7 @@ import availabilityRoutes from "./routes/availabilityRoutes.js";
 
 dotenv.config();
 
-app.use(cors({
-  origin: "*", // temporary (we'll lock it later)
-}));
+
 
 
 const app = express();
@@ -22,7 +20,9 @@ const app = express();
 /* ======================
    MIDDLEWARE
 ====================== */
-app.use(cors());
+app.use(cors({
+  origin: "*", // temporary (we'll lock it later)
+}));
 app.use(express.json());
 
 /* ======================
