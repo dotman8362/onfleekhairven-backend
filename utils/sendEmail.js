@@ -1,22 +1,11 @@
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
 import { createEvent } from "ics";
 
 dotenv.config();
 
-/* ===============================
-   SendGrid Transporter
-================================ */
-const transporter = nodemailer.createTransport({
-  host: "smtp.sendgrid.net",
-  port: 587,
-  secure: false, // STARTTLS
-  auth: {
-    user: process.env.SENDGRID_USER, // literally "apikey"
-    pass: process.env.SENDGRID_PASS, // your SendGrid API key
-  },
-  connectionTimeout: 10000, // prevent timeout crash
-});
+// Set your SendGrid API key
+sgMail.setApiKey(process.env.SENDGRID_PASS); // Use the API key
 
 /* ===============================
    Helper: Convert 12h to 24h
@@ -36,7 +25,7 @@ function convertTo24Hour(timeStr) {
 }
 
 /* ===============================
-   Send Booking Confirmation
+   Send Booking Confirmation Email
 ================================ */
 export const sendConfirmationEmail = async (booking) => {
   try {
@@ -48,12 +37,10 @@ export const sendConfirmationEmail = async (booking) => {
 
     const dateParts = date.split("-").map(Number);
     const convertedTime = convertTo24Hour(time);
-
     if (!convertedTime) return console.log("❌ Invalid time format");
 
     /* ===============================
        ICS Calendar Event
-       ✅ organizer.email must be a valid email
     ================================ */
     const event = {
       start: [...dateParts, convertedTime.hour, convertedTime.minute],
@@ -63,8 +50,7 @@ export const sendConfirmationEmail = async (booking) => {
       location: "Southeast London, SE28",
       status: "CONFIRMED",
       busyStatus: "BUSY",
-      // ⚡ Use a real email here, not SendGrid auth
-      organizer: { name: "OnFleekHairven", email: "onfleekhairven@gmail.com" },
+      organizer: { name: "OnFleekHairven", email: "onfleekhairven@gmail.com" }, // valid email
       attendees: [{ name: fullName, email }],
     };
 
@@ -74,10 +60,10 @@ export const sendConfirmationEmail = async (booking) => {
     /* ===============================
        Email Content
     ================================ */
-    const mailOptions = {
-      from: `"OnFleek Hairven" <noreply@onfleekhairven.com>`,
+    const msg = {
       to: email,
-      subject: "Your Booking Has Been Confirmed ✔️",
+      from: "noreply@onfleekhairven.com", // must be verified in SendGrid
+      subject: `Your Booking Has Been Confirmed ✔️`,
       text: `
 Booking Confirmation
 
@@ -130,9 +116,10 @@ Thank you for choosing OnFleek Hairven.
       `,
       attachments: [
         {
+          content: Buffer.from(icsFile),
           filename: "appointment.ics",
-          content: icsFile,
-          contentType: "text/calendar",
+          type: "text/calendar",
+          disposition: "attachment",
         },
       ],
     };
@@ -140,9 +127,9 @@ Thank you for choosing OnFleek Hairven.
     /* ===============================
        Send Email
     ================================ */
-    await transporter.sendMail(mailOptions);
+    await sgMail.send(msg);
     console.log(`✅ Confirmation email sent to ${email}`);
   } catch (error) {
-    console.error("❌ SendGrid email failed:", error.message);
+    console.error("❌ SendGrid API email failed:", error.message);
   }
 };
