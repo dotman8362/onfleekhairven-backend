@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import availabilityRoutes from "./routes/availabilityRoutes.js";
+import blockedMonthRoutes from "./routes/blockedMonth.js";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use(express.static(path.join(__dirname, "..", "frontend")));
 app.use("/api", bookingRoutes);
 app.use("/api", adminRoutes);
 app.use("/api", availabilityRoutes);
+app.use("/api", blockedMonthRoutes);
 
 
 
