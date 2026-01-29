@@ -4,24 +4,29 @@ import { createEvent } from "ics";
 
 dotenv.config();
 
+/* ===============================
+   SendGrid Transporter
+================================ */
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.sendgrid.net",
+  port: 587,          // STARTTLS port (works on Render)
+  secure: false,      // false for STARTTLS
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.SENDGRID_USER, // literally "apikey"
+    pass: process.env.SENDGRID_PASS, // your SendGrid API key
   },
-  tls: {
-    rejectUnauthorized: false,
-  },
+  connectionTimeout: 10000,          // prevent timeout crash
 });
 
+/* ===============================
+   Helpers
+================================ */
 function convertTo24Hour(timeStr) {
-  // Example inputs: 9AM, 9PM, 12PM, 12AM, 9:30AM
   const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
   if (!match) return null;
 
-  let hour = parseInt(match[1]);
-  const minute = match[2] ? parseInt(match[2]) : 0;
+  let hour = parseInt(match[1], 10);
+  const minute = match[2] ? parseInt(match[2], 10) : 0;
   const period = match[3].toUpperCase();
 
   if (period === "PM" && hour !== 12) hour += 12;
@@ -30,116 +35,113 @@ function convertTo24Hour(timeStr) {
   return { hour, minute };
 }
 
+/* ===============================
+   Send Booking Confirmation
+================================ */
 export const sendConfirmationEmail = async (booking) => {
+  try {
+    if (!booking) return console.log("❌ No booking provided");
 
+    const { date, time, email, fullName, serviceName, price, city } = booking;
 
-  const { date, time, email, fullName, serviceName } = booking;
+    if (!email) return console.log("❌ Booking has no email address");
 
-  const dateParts = date.split("-").map(Number);
-  const convertedTime = convertTo24Hour(time);
+    const dateParts = date.split("-").map(Number);
+    const convertedTime = convertTo24Hour(time);
 
-  if (!convertedTime) {
-    console.log("❌ Invalid time format");
-    return;
-  }
+    if (!convertedTime) return console.log("❌ Invalid time format");
 
-  const event = {
-    start: [...dateParts, convertedTime.hour, convertedTime.minute],
-    duration: { hours: 1 },
-    title: ` OnfleekHairven Appointment: ${serviceName}`,
-    description: `Appointment confirmed for ${fullName}`,
-    location: "Southeast London, SE28",
-    status: "CONFIRMED",
-    busyStatus: "BUSY",
-    organizer: { name: "OnFleekHairven", email: process.env.EMAIL_USER },
-    attendees: [{ name: fullName, email }],
-  };
+    /* ===============================
+       Calendar Event (.ics)
+    ================================ */
+    const event = {
+      start: [...dateParts, convertedTime.hour, convertedTime.minute],
+      duration: { hours: 1 },
+      title: `OnFleekHairven Appointment: ${serviceName}`,
+      description: `Appointment confirmed for ${fullName}`,
+      location: "Southeast London, SE28",
+      status: "CONFIRMED",
+      busyStatus: "BUSY",
+      organizer: { name: "OnFleekHairven", email: process.env.SENDGRID_USER },
+      attendees: [{ name: fullName, email }],
+    };
 
-  const { error, value } = createEvent(event);
+    const { error: icsError, value: icsFile } = createEvent(event);
+    if (icsError) return console.log("❌ ICS creation error:", icsError);
 
-  if (error) {
-    console.log("ICS Error:", error);
-    return;
-  }
+    /* ===============================
+       Email Options
+    ================================ */
+    const mailOptions = {
+      from: `"OnFleek Hairven" <${process.env.SENDGRID_USER}>`,
+      to: email,
+      subject: "Your Booking Has Been Confirmed ✔️",
+      text: `
+Booking Confirmation
 
- const mailOptions = {
-  from: `"OnFleek Hairven" <${process.env.EMAIL_USER}>`,
-  to: email,
-  subject: "Your Booking Has Been Confirmed ✔️",
-  text: `
-    Booking Confirmation
+Dear ${fullName},
 
-    Dear ${fullName},
+Your booking has been successfully confirmed.
 
-    Your booking has been successfully confirmed.
+Service: ${serviceName}
+Date: ${date}
+Time: ${time}
+Price: £${price}
+City: ${city}
 
-    Service: ${serviceName}
-    Date: ${date}
-    Time: ${time}
-    Price: £${booking.price}
-    City: ${booking.city}
+Address: Southeast London SE28
+Contact: 07930846512
+Payment: Cash on arrival
 
-    Address: Southeast London SE28
-    Contact: 07930846512
-    Payment: Cash on arrival
-
-    Thank you for choosing OnFleek Hairven.
-  `,
-  html: `
-    <div style="font-family: Arial, Helvetica, sans-serif; background:#f4f4f8; padding:40px;">
+Thank you for choosing OnFleek Hairven.
+      `,
+      html: `
+<div style="font-family: Arial, Helvetica, sans-serif; background:#f4f4f8; padding:40px;">
   <div style="max-width:600px; margin:auto; background:#ffffff; padding:40px; border-radius:12px; box-shadow:0 6px 20px rgba(0,0,0,0.1);">
 
-    <!-- Header -->
-    <h2 style="color:#d63384; font-family: 'Arial Black', sans-serif; text-align:center; margin-bottom:20px;">
-      🎉 Booking Confirmed!
-    </h2>
+    <h2 style="color:#d63384; text-align:center; margin-bottom:20px;">🎉 Booking Confirmed!</h2>
 
-    <p style="color:#374151; font-size:16px; line-height:1.6;">
-      Hi <strong>${fullName}</strong>,
-    </p>
+    <p>Hi <strong>${fullName}</strong>,</p>
+    <p>Your booking has been <strong style="color:#d63384;">successfully confirmed</strong>. Here are your appointment details:</p>
 
-    <p style="color:#374151; font-size:15px; line-height:1.6;">
-      Your booking has been <strong style="color:#d63384;">successfully confirmed</strong>. Here are your appointment details:
-    </p>
-
-    <!-- Appointment Details Box -->
     <div style="margin:25px 0; padding:25px; background:#fde2f1; border-left:5px solid #d63384; border-radius:8px;">
-      <p style="margin:6px 0;"><strong>Service:</strong> ${serviceName}</p>
-      <p style="margin:6px 0;"><strong>Date:</strong> ${date}</p>
-      <p style="margin:6px 0;"><strong>Time:</strong> ${time}</p>
-      <p style="margin:6px 0;"><strong>Price:</strong> £${booking.price}</p>
-      <p style="margin:6px 0;"><strong>City:</strong> ${booking.city}</p>
+      <p><strong>Service:</strong> ${serviceName}</p>
+      <p><strong>Date:</strong> ${date}</p>
+      <p><strong>Time:</strong> ${time}</p>
+      <p><strong>Price:</strong> £${price}</p>
+      <p><strong>City:</strong> ${city}</p>
     </div>
 
-    <!-- Important Notes -->
     <div style="margin:20px 0; padding:20px; background:#fff0f6; border-radius:8px; border:1px solid #ffd6e0;">
-      <p style="margin:6px 0;"><strong>Address:</strong> 📍 Southeast London, SE28</p>
-      <p style="margin:6px 0; color:#d63384;"><strong>Confidential:</strong> This address is strictly for the individual who booked the appointment.</p>
-      <p style="margin:6px 0;"><strong>Contact:</strong> 07930846512</p>
-      <p style="margin:6px 0;"><strong>Payment:</strong> Cash on arrival</p>
+      <p><strong>Address:</strong> 📍 Southeast London, SE28</p>
+      <p style="color:#d63384;"><strong>Confidential:</strong> This address is strictly for the individual who booked the appointment.</p>
+      <p><strong>Contact:</strong> 07930846512</p>
+      <p><strong>Payment:</strong> Cash on arrival</p>
     </div>
 
-    <!-- Thank You -->
-    <p style="margin-top:30px; font-size:16px; color:#374151;">
-      Thank you for choosing <strong>OnFleek Hairven</strong>. We look forward to seeing you soon!
-    </p>
+    <p style="margin-top:30px;">Thank you for choosing <strong>OnFleek Hairven</strong>. We look forward to seeing you soon!</p>
 
-    <p style="color:#6b7280; font-size:14px; margin-top:20px; text-align:center;">
-      Warm regards,<br/>
-      <strong>OnFleekHairven Team</strong>
-    </p>
+    <p style="color:#6b7280; font-size:14px; margin-top:20px; text-align:center;">Warm regards,<br/><strong>OnFleekHairven Team</strong></p>
 
   </div>
 </div>
+      `,
+      attachments: [
+        {
+          filename: "appointment.ics",
+          content: icsFile,
+          contentType: "text/calendar",
+        },
+      ],
+    };
 
-  `,
-  attachments: [
-    {
-      filename: "appointment.ics",
-      content: value,
-      contentType: "text/calendar",
-    },
-  ],
-};
-  await transporter.sendMail(mailOptions);
+    /* ===============================
+       Send Email (non-blocking)
+    ================================ */
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Confirmation email sent to ${email}`);
+
+  } catch (error) {
+    console.error("❌ SendGrid email failed:", error.message);
+  }
 };
