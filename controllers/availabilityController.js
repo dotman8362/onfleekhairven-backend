@@ -54,3 +54,66 @@ export const unblockDate = async (req, res) => {
     unavailableDates: availability.unavailableDates,
   });
 };
+
+
+/**
+ * BLOCK MULTIPLE DATES (ADMIN)
+ */
+export const blockMultipleDates = async (req, res) => {
+  try {
+    const { dates } = req.body; // expect an array of strings ["2026-02-15", "2026-02-16"]
+
+    if (!dates || !Array.isArray(dates) || dates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one date is required",
+      });
+    }
+
+    // Add each date to unavailableDates array without duplicates
+    const availability = await Availability.findOneAndUpdate(
+      {},
+      { $addToSet: { unavailableDates: { $each: dates } } },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      unavailableDates: availability.unavailableDates,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+/**
+ * UNBLOCK MULTIPLE DATES (ADMIN)
+ */
+export const unblockMultipleDates = async (req, res) => {
+  try {
+    const { dates } = req.body; // expect an array of strings ["2026-02-15", "2026-02-16"]
+
+    if (!dates || !Array.isArray(dates) || dates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "At least one date is required",
+      });
+    }
+
+    const availability = await Availability.findOneAndUpdate(
+      {},
+      { $pull: { unavailableDates: { $in: dates } } },
+      { new: true }
+    );
+
+    res.status(200).json({
+      success: true,
+      unavailableDates: availability?.unavailableDates || [],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
