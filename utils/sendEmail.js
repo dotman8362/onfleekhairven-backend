@@ -9,17 +9,17 @@ dotenv.config();
 ================================ */
 const transporter = nodemailer.createTransport({
   host: "smtp.sendgrid.net",
-  port: 587,          // STARTTLS port (works on Render)
-  secure: false,      // false for STARTTLS
+  port: 587,
+  secure: false, // STARTTLS
   auth: {
     user: process.env.SENDGRID_USER, // literally "apikey"
     pass: process.env.SENDGRID_PASS, // your SendGrid API key
   },
-  connectionTimeout: 10000,          // prevent timeout crash
+  connectionTimeout: 10000, // prevent timeout crash
 });
 
 /* ===============================
-   Helpers
+   Helper: Convert 12h to 24h
 ================================ */
 function convertTo24Hour(timeStr) {
   const match = timeStr.match(/(\d{1,2})(?::(\d{2}))?\s*(AM|PM)/i);
@@ -52,7 +52,8 @@ export const sendConfirmationEmail = async (booking) => {
     if (!convertedTime) return console.log("❌ Invalid time format");
 
     /* ===============================
-       Calendar Event (.ics)
+       ICS Calendar Event
+       ✅ organizer.email must be a valid email
     ================================ */
     const event = {
       start: [...dateParts, convertedTime.hour, convertedTime.minute],
@@ -62,7 +63,8 @@ export const sendConfirmationEmail = async (booking) => {
       location: "Southeast London, SE28",
       status: "CONFIRMED",
       busyStatus: "BUSY",
-      organizer: { name: "OnFleekHairven", email: process.env.SENDGRID_USER },
+      // ⚡ Use a real email here, not SendGrid auth
+      organizer: { name: "OnFleekHairven", email: "onfleekhairven@gmail.com" },
       attendees: [{ name: fullName, email }],
     };
 
@@ -70,10 +72,10 @@ export const sendConfirmationEmail = async (booking) => {
     if (icsError) return console.log("❌ ICS creation error:", icsError);
 
     /* ===============================
-       Email Options
+       Email Content
     ================================ */
     const mailOptions = {
-      from: `"OnFleek Hairven" <${process.env.SENDGRID_USER}>`,
+      from: `"OnFleek Hairven" <noreply@onfleekhairven.com>`,
       to: email,
       subject: "Your Booking Has Been Confirmed ✔️",
       text: `
@@ -136,11 +138,10 @@ Thank you for choosing OnFleek Hairven.
     };
 
     /* ===============================
-       Send Email (non-blocking)
+       Send Email
     ================================ */
     await transporter.sendMail(mailOptions);
     console.log(`✅ Confirmation email sent to ${email}`);
-
   } catch (error) {
     console.error("❌ SendGrid email failed:", error.message);
   }
