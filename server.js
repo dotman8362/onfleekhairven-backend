@@ -51,9 +51,28 @@ app.use("/api", blockedMonthRoutes);
    DATABASE
 ====================== */
 // One-line connection
-mongoose.connect('mongodb://adedotunjeremiah836:6YY6BD3YQIKAURC6@ac-vy0qvdz-shard-00-00.zodmfur.mongodb.net:27017/booking?authSource=admin&ssl=true')
-  .then(() => console.log('✅ MongoDB Connected'))
-  .catch(err => console.error('❌ Error:', err.message));
+
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(
+      'mongodb+srv://adedotunjeremiah836:6YY6BD3YQIKAURC6@ac-vy0qvdz.zodmfur.mongodb.net/booking?retryWrites=true&w=majority',
+      {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      }
+    );
+    console.log('✅ MongoDB Connected');
+  } catch (err) {
+    console.error('❌ MongoDB Connection Error:', err.message);
+  }
+};
+
+// Call the function
+connectDB();
+// mongoose.connect('mongodb://adedotunjeremiah836:6YY6BD3YQIKAURC6@ac-vy0qvdz-shard-00-00.zodmfur.mongodb.net:27017/booking?authSource=admin&ssl=true')
+//   .then(() => console.log('✅ MongoDB Connected'))
+//   .catch(err => console.error('❌ Error:', err.message));
 
 
 
