@@ -33,6 +33,7 @@ try {
 
 res.status(201).json(booking);
 
+    };
 
 
 // Admin fetch all bookings
