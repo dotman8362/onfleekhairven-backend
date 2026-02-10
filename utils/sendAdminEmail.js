@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendAdminEmail = async (booking) => {
   const { error } = await resend.emails.send({
-    from: "Bookings Team <onboarding@resend.dev>", // Change after domain verification
+    from: "Bookings Team <admin@onfleekhairven.co.uk>", // Change after domain verification
     to: [process.env.ADMIN_EMAIL],
     subject: "New Booking Notification",
     html: `
