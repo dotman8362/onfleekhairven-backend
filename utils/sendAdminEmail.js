@@ -24,15 +24,15 @@ export const sendAdminEmail = async (booking) => {
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <tr>
             <td style="padding: 8px; font-weight: bold;">Full Name:</td>
-            <td style="padding: 8px;">${booking.name || "N/A"}</td>
+            <td style="padding: 8px;">${fullName}</td>
           </tr>
           <tr>
             <td style="padding: 8px; font-weight: bold;">Email Address:</td>
-            <td style="padding: 8px;">${booking.email || "N/A"}</td>
+            <td style="padding: 8px;">${email}</td>
           </tr>
           <tr>
             <td style="padding: 8px; font-weight: bold;">Phone Number:</td>
-            <td style="padding: 8px;">${booking.phone || "Not Provided"}</td>
+            <td style="padding: 8px;">${phone}</td>
           </tr>
         </table>
 
@@ -43,11 +43,11 @@ export const sendAdminEmail = async (booking) => {
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <tr>
             <td style="padding: 8px; font-weight: bold;">Service:</td>
-            <td style="padding: 8px;">${booking.service || "N/A"}</td>
+            <td style="padding: 8px;">${serviceName}</td>
           </tr>
           <tr>
             <td style="padding: 8px; font-weight: bold;">Booking Date:</td>
-            <td style="padding: 8px;">${booking.date || "N/A"}</td>
+            <td style="padding: 8px;">${date}</td>
           </tr>
         </table>
 
