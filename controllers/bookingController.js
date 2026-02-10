@@ -1,14 +1,19 @@
 import Booking from "../models/Booking.js";
 import { sendConfirmationEmail } from "../utils/sendEmail.js";
 import BlockedDate from "../models/BlockedDate.js";
+import { sendAdminEmail } from "../utils/sendAdminEmail.js";
 
 // Create booking
+
+
 export const createBooking = async (req, res) => {
   try {
     const bookingData = req.body;
 
     // ✅ Check if date is blocked BEFORE saving booking
-    const existingBlocked = await BlockedDate.findOne({ date: bookingData.date });
+    const existingBlocked = await BlockedDate.findOne({
+      date: bookingData.date,
+    });
 
     if (existingBlocked) {
       return res
@@ -16,12 +21,19 @@ export const createBooking = async (req, res) => {
         .json({ message: "Date is blocked. Choose another date." });
     }
 
-    const booking = await Booking.create(bookingData);
-    res.status(201).json(booking);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
+    // ✅ Create booking
+   const booking = await Booking.create(bookingData);
+
+// ✅ Try sending email but don't break booking if it fails
+try {
+  await sendAdminEmail(booking);
+} catch (emailError) {
+  console.error("Email sending failed:", emailError);
+}
+
+res.status(201).json(booking);
+
+
 
 // Admin fetch all bookings
 export const getBookings = async (req, res) => {
