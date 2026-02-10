@@ -55,7 +55,7 @@ export const sendConfirmationEmail = async (booking) => {
     }
 
     await resend.emails.send({
-      from: "OnFleekHairven admin@onfleekhairven.co.uk",
+      from: "OnFleekHairven <admin@onfleekhairven.co.uk>",
       to: email,
       subject: "Your Booking Has Been Confirmed ✔️",
       text: `
