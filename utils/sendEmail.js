@@ -22,7 +22,12 @@ function convertTo24Hour(timeStr) {
 
 export const sendConfirmationEmail = async (booking) => {
   try {
-    const { date, time, email, fullName, serviceName } = booking;
+  const { date, time, email, fullName, serviceName } = booking;
+
+if (!email || typeof email !== "string") {
+  console.log("❌ Invalid email:", email);
+  return;
+}
 
     const dateParts = date.split("-").map(Number);
     const convertedTime = convertTo24Hour(time);
@@ -121,11 +126,11 @@ Payment: Cash on arrival
 
   `,
       attachments: [
-        {
-          filename: "appointment.ics",
-          content: value,
-        },
-      ],
+  {
+    filename: "appointment.ics",
+    content: Buffer.from(value).toString("base64"),
+  },
+],
     });
 
     console.log("✅ Confirmation email sent via Resend");
