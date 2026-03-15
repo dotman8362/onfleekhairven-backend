@@ -23,6 +23,10 @@ function convertTo24Hour(timeStr) {
 export const sendConfirmationEmail = async (booking) => {
   try {
   const { date, time, email, fullName, serviceName } = booking;
+    if (!email || typeof email !== "string") {
+  console.log("❌ Invalid email:", email);
+  return;
+}
 
 if (!email || typeof email !== "string") {
   console.log("❌ Invalid email:", email);
