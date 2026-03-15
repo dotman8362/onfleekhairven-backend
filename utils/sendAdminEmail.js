@@ -8,7 +8,7 @@ export const sendAdminEmail = async (booking) => {
 
   const { error } = await resend.emails.send({
     from: "Bookings Team <admin@onfleekhairven.co.uk>",
-    to: [process.env.ADMIN_EMAIL],
+    to: process.env.ADMIN_EMAIL,
     subject: "New Booking Notification",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
